@@ -41,7 +41,7 @@ def calculate_profit(input_file, include_groups = False):
     calculates the indicators and returns a dictionary with values'''
 
     result = {}
-    # Extracting date from file name
+
     can_get_date = (
         input_file.find(' с ') != -1,
         input_file.find(' по ') != -1,
@@ -50,10 +50,8 @@ def calculate_profit(input_file, include_groups = False):
     if all(can_get_date):
         result['Invoice_date'] = input_file[input_file.find(' с ')+1:input_file.find(' по ')+14]
     
-    # Opening the file and getting the table from the first sheet
     table = xlrd.open_workbook(input_file).sheet_by_index(0)
     
-    # Getting columns with name, sum, sales volumes and optionally groups
     products = table.col(0)[3:-3]
     products_sum = table.col(3)[3:-3]
     product_sales_volumes = table.col(2)[3:-3]
