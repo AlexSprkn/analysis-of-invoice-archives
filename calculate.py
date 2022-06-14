@@ -43,11 +43,10 @@ def calculate_profit(input_file, include_groups = False):
     can_get_date = (
         input_file.find(' с ') != -1,
         input_file.find(' по ') != -1,
-        input_file.find(' Товары') != -1,
         )
     result['Invoice_date'] = None
     if all(can_get_date):
-        result['Invoice_date'] = input_file[input_file.find(' с '):input_file.find(' Товары')]
+        result['Invoice_date'] = input_file[input_file.find(' с ')+1:input_file.find(' по ')+14]
     # Открываем файл и получаем таблицу с первого листа
     table = xlrd.open_workbook(input_file).sheet_by_index(0)
     # Достаём из него колонки с наименованием и суммой
