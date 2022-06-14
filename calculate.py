@@ -65,8 +65,6 @@ def calculate_profit(input_file, include_groups = False):
         product = products[index].value
         product_sum = get_float_from_cell(products_sum[index])
         product_sales_volume = get_float_from_cell(product_sales_volumes[index])
-        #print(product.value, product_sum)
-        #print(product_sum)
         # Пропускаем строки не с товарами
         not_valid_data = (
             product.startswith('Наименование'),
@@ -77,9 +75,9 @@ def calculate_profit(input_file, include_groups = False):
             not product_sum,
             not product_sales_volume
             )
-        
         if any(not_valid_data):
             continue
+        # Подсчитываем общую выручку
         total_revenue += product_sum
         # Записываем полученные значения в словарь
         if result_products.get(product):
@@ -102,6 +100,9 @@ def calculate_profit(input_file, include_groups = False):
 def write_results(results_list):
     # Функция принимает список с результатами и записывает их в соответствующие файлы
     counter = 1
+    # Предустановка для границ в Excel
+    bd = openpyxl.styles.Side(style='thin', color="000000")
+    all_borders = openpyxl.styles.Border(left=bd, top=bd, right=bd, bottom=bd)
     for result in results_list:
         # Записываем словарь с информацие по товарам в переменную
         result_products = result['result_products']
@@ -116,45 +117,72 @@ def write_results(results_list):
             identificator = result['Invoice_date']
         ws['A1'] = 'Общая выручка: '
         ws['A1'].font = openpyxl.styles.Font(bold=True)
+        ws['A1'].border = all_borders
         ws['A2'] = 'Приблизительная сумма прибыли при наценке 5%: '
         ws['A2'].font = openpyxl.styles.Font(bold=True)
+        ws['A2'].border = all_borders
         total_revenue = result['total_revenue']
         ws['C1'] = total_revenue
         ws['C1'].alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+        ws['C1'].border = all_borders
+        ws['C1'].number_format = '0.00'
         ws['C2'] = (total_revenue / 1.05 / 1.2) * 0.05
+        ws['C2'].number_format = '0.00'
         ws['C2'].alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+        ws['C2'].border = all_borders
         ws['A3'] = 'Приблизительная сумма прибыли при наценке (укажите процент): '
         ws['A3'].font = openpyxl.styles.Font(bold=True)
+        ws['A3'].border = all_borders
         ws['B3'] = 0
         ws['B3'].number_format = '0.00%'
+        ws['B1'].border = all_borders
+        ws['B2'].border = all_borders
+        ws['B3'].border = all_borders
         ws['C3'] = '=C1/1.2/(1+B3)*B3'
+        ws['C3'].number_format = '0.00'
         ws['C3'].alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+        ws['C3'].border = all_borders
         ws['A5'] = 'Товар'
         ws['A5'].font = openpyxl.styles.Font(bold=True)
         ws['A5'].alignment = openpyxl.styles.Alignment(wrapText=True, horizontal='center', vertical='center')
+        ws['A5'].border = all_borders
         ws['B5'] = 'Продано единиц'
         ws['B5'].font = openpyxl.styles.Font(bold=True)
         ws['B5'].alignment = openpyxl.styles.Alignment(wrapText=True, horizontal='center', vertical='center')
+        ws['B5'].border = all_borders
         ws['C5'] = f'Сумма продаж за период {identificator} по товару'
         ws['C5'].font = openpyxl.styles.Font(bold=True)
         ws['C5'].alignment = openpyxl.styles.Alignment(wrapText=True, horizontal='center', vertical='center')
+        ws['C5'].border = all_borders
         if result['include_groups']:
             ws['D5'] = "Группа товара"
-            ws['C5'].font = openpyxl.styles.Font(bold=True)
-            ws['C5'].alignment = openpyxl.styles.Alignment(wrapText=True, horizontal='center', vertical='center')
+            ws['D5'].font = openpyxl.styles.Font(bold=True)
+            ws['D5'].alignment = openpyxl.styles.Alignment(wrapText=True, horizontal='center', vertical='center')
+            ws['D5'].border = all_borders
         
-        for index, product in enumerate(result_products.keys()):
+        # Сортировка товаров по убыванию суммы продаж
+        result_products_sorted = list(result_products.keys())
+        result_products_sorted.sort(key=lambda product: result_products[product]['product_sum'], reverse=True)
+
+
+        # Запись значений в таблицу
+        for index, product in enumerate(result_products_sorted):
             ws['A'+str(index+6)] = product
             ws['A'+str(index+6)].alignment = openpyxl.styles.Alignment(vertical='center')
+            ws['A'+str(index+6)].border = all_borders
             ws['C'+str(index+6)] = result_products[product]['product_sum']
+            ws['C'+str(index+6)].number_format = '0.00'
             ws['C'+str(index+6)].alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            ws['C'+str(index+6)].border = all_borders
             ws['B'+str(index+6)] = result_products[product]['product_sales_volume']
             ws['B'+str(index+6)].alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+            ws['B'+str(index+6)].border = all_borders
             if result['include_groups']:
                 ws['D'+str(index+6)] = result_products[product]['group']
                 ws['D'+str(index+6)].alignment = openpyxl.styles.Alignment(vertical='center')
+                ws['D'+str(index+6)].border = all_borders
         
-
+        # Сохраняем в файл
         output_file = f'Отчёт по продажам {identificator}.xlsx'
         output_file = join('Отчёты', output_file)
         wb.save(output_file)
